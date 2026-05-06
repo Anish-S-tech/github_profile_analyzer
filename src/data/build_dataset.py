@@ -25,6 +25,9 @@ import os
 import json
 import time
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -134,6 +137,10 @@ def main():
             print(f"  Processed {i}/{len(all_usernames)}  ok={len(dataset)}  failed={failed}")
 
     # Step 3 — Save dataset
+    if not dataset:
+        print("\nERROR: No users collected. Check your GITHUB_TOKEN in .env")
+        sys.exit(1)
+
     with open(DATASET_PATH, "w", encoding="utf-8") as f:
         json.dump(dataset, f, indent=2)
 

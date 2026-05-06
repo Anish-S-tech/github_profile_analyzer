@@ -1,17 +1,26 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 import styles from './Home.module.css'
 
 const PLACEHOLDERS = ['torvalds', 'karpathy', 'gaearon', 'sindresorhus', 'addyosmani']
+
 const FEATURES = [
-  { label: 'Impact Score',      desc: 'ML-predicted influence level' },
-  { label: 'Skill Detection',   desc: 'Language-based developer type' },
-  { label: 'Contribution Style',desc: 'How you build and ship' },
-  { label: 'Maturity Score',    desc: 'Project depth and consistency' },
-  { label: 'AI Insights',       desc: 'Ollama-powered career advice' },
+  { icon: '◈', label: 'Impact Score',       desc: 'ML-predicted influence 0–100',   color: 'var(--accent)'  },
+  { icon: '◉', label: 'Skill Detection',    desc: 'Language-based dev type',        color: 'var(--purple)'  },
+  { icon: '◎', label: 'Contribution Style', desc: 'How you build and ship',         color: 'var(--green)'   },
+  { icon: '◈', label: 'Maturity Score',     desc: 'Project depth & consistency',    color: 'var(--orange)'  },
+  { icon: '◉', label: 'AI Insights',        desc: 'Ollama-powered career advice',   color: 'var(--pink)'    },
 ]
 
-function useTypewriter(words, speed = 80, pause = 1800) {
+const STATS = [
+  { value: '302+', label: 'Developers Analyzed' },
+  { value: '4',    label: 'ML Models' },
+  { value: '18',   label: 'Features Extracted' },
+  { value: '24h',  label: 'Result Cache' },
+]
+
+function useTypewriter(words, speed = 75, pause = 2000) {
   const [text, setText] = useState('')
   const [wordIdx, setWordIdx] = useState(0)
   const [deleting, setDeleting] = useState(false)
@@ -36,11 +45,11 @@ function useTypewriter(words, speed = 80, pause = 1800) {
 export default function Home() {
   const [username, setUsername] = useState('')
   const [focused,  setFocused]  = useState(false)
-  const navigate  = useNavigate()
-  const inputRef  = useRef(null)
+  const navigate   = useNavigate()
+  const inputRef   = useRef(null)
   const placeholder = useTypewriter(PLACEHOLDERS)
+  const { user, logout, isLoggedIn } = useAuth()
 
-  // Press / to focus input
   useEffect(() => {
     const handler = (e) => {
       if (e.key === '/' && document.activeElement !== inputRef.current) {
@@ -62,32 +71,49 @@ export default function Home() {
     <div className={styles.page}>
       <div className={styles.hero}>
 
-        {/* Logo */}
-        <div className={styles.logo}>
-          <svg viewBox="0 0 16 16" fill="currentColor" className={styles.logoSvg}>
-            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
-              0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
-              -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66
-              .07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15
-              -.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0
-              1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82
-              1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01
-              1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
-          </svg>
-          <span>GitHub Intelligence</span>
+        {/* Brand */}
+        <div className={styles.topBar}>
+          <div className={styles.brand}>
+            <div className={styles.brandIcon}>
+              <svg viewBox="0 0 16 16" fill="currentColor" width="18" height="18">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+                  0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
+                  -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66
+                  .07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15
+                  -.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0
+                  1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82
+                  1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01
+                  1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+              </svg>
+            </div>
+            <span className={styles.brandName}>DevProfile AI</span>
+            <span className={styles.brandBadge}>Beta</span>
+          </div>
+          <div className={styles.authArea}>
+            {isLoggedIn ? (
+              <>
+                <span className={styles.userEmail}>{user?.email}</span>
+                <button className={styles.authBtn} onClick={logout}>Sign Out</button>
+              </>
+            ) : (
+              <button className={styles.authBtn} onClick={() => navigate('/login')}>Sign In</button>
+            )}
+          </div>
         </div>
 
+        {/* Headline */}
         <h1 className={styles.headline}>
-          Understand any developer<br />
-          <span className={styles.accent}>with ML + AI</span>
+          Analyze any GitHub developer<br />
+          <span className={styles.gradientText}>with ML + AI</span>
         </h1>
 
         <p className={styles.sub}>
-          Enter a GitHub username and get an instant analysis of impact,
-          skills, contribution style, and AI-generated career insights.
+          Enter a GitHub username and get an instant deep analysis —
+          impact score, skill type, contribution style, and AI-generated
+          career insights powered by local LLMs.
         </p>
 
-        {/* Search form */}
+        {/* Search */}
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={`${styles.inputWrapper} ${focused ? styles.inputFocused : ''}`}>
             <span className={styles.at}>@</span>
@@ -103,41 +129,49 @@ export default function Home() {
               autoComplete="off"
               spellCheck="false"
             />
-            {!focused && !username && (
-              <kbd className={styles.kbd}>/</kbd>
-            )}
+            {!focused && !username && <kbd className={styles.kbd}>/</kbd>}
           </div>
           <button className={styles.btn} type="submit" disabled={!username.trim()}>
             Analyze
-            <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14">
+            <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13">
               <path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z"/>
             </svg>
           </button>
         </form>
 
-        {/* Quick examples */}
+        {/* Examples */}
         <div className={styles.examples}>
           <span className={styles.exLabel}>Try:</span>
           {['torvalds', 'karpathy', 'gaearon', 'sindresorhus'].map(u => (
-            <button
-              key={u}
-              className={styles.exBtn}
-              onClick={() => navigate(`/dashboard?user=${u}`)}
-            >
+            <button key={u} className={styles.exBtn}
+              onClick={() => navigate(`/dashboard?user=${u}`)}>
               {u}
             </button>
           ))}
         </div>
 
-        {/* Feature grid */}
+        {/* Stats bar */}
+        <div className={styles.statsBar}>
+          {STATS.map((s, i) => (
+            <div key={i} className={styles.stat}>
+              <span className={styles.statValue}>{s.value}</span>
+              <span className={styles.statLabel}>{s.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Feature cards */}
         <div className={styles.features}>
           {FEATURES.map((f, i) => (
-            <div key={i} className={styles.feature} style={{ animationDelay: `${i * 0.08}s` }}>
+            <div key={i} className={styles.feature}
+              style={{ animationDelay: `${i * 0.07}s`, '--fc': f.color }}>
+              <span className={styles.featureIcon} style={{ color: f.color }}>{f.icon}</span>
               <span className={styles.featureLabel}>{f.label}</span>
               <span className={styles.featureDesc}>{f.desc}</span>
             </div>
           ))}
         </div>
+
       </div>
     </div>
   )

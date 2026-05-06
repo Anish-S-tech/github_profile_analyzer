@@ -71,13 +71,14 @@ def clean(raw: dict) -> dict:
         if not isinstance(r, dict):
             continue
         repos.append({
-            "name":       _safe_str(r.get("name")),
-            "stars":      _safe_int(r.get("stars")),
-            "forks":      _safe_int(r.get("forks")),
-            "language":   r.get("language"),   # keep None — features.py handles it
-            "created_at": _safe_date(r.get("created_at")),
-            "updated_at": _safe_date(r.get("updated_at")),
-            "topics":     _safe_list(r.get("topics")),
+            "name":           _safe_str(r.get("name")),
+            "stars":          _safe_int(r.get("stars")),
+            "forks":          _safe_int(r.get("forks")),
+            "language":       r.get("language"),
+            "language_bytes": r.get("language_bytes") if isinstance(r.get("language_bytes"), dict) else {},
+            "created_at":     _safe_date(r.get("created_at")),
+            "updated_at":     _safe_date(r.get("updated_at")),
+            "topics":         _safe_list(r.get("topics")),
         })
 
     return {"user": user, "repos": repos}

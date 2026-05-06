@@ -112,31 +112,46 @@ def build_features(cleaned: dict) -> dict:
     lang_counts: dict[str, int] = {}
     for r in repos:
         lang = r.get("language")
-        if lang and lang.strip():         # skip None / empty / whitespace
+        if lang and lang.strip():
             lang_counts[lang.strip()] = lang_counts.get(lang.strip(), 0) + 1
 
-    # Fallback: scan topics for language hints if no language data found
-    if not lang_counts:
-        TOPIC_LANG_MAP = {
-            "python": "Python", "javascript": "JavaScript", "typescript": "TypeScript",
-            "java": "Java", "cpp": "C++", "c-plus-plus": "C++", "c": "C",
-            "rust": "Rust", "go": "Go", "golang": "Go", "ruby": "Ruby",
-            "php": "PHP", "swift": "Swift", "kotlin": "Kotlin", "dart": "Dart",
-            "html": "HTML", "css": "CSS", "shell": "Shell", "r": "R",
+    # Fallback: use language_bytes if available (from collector enrichment)
+    lang_bytes: dict[str, int] = {}
+    for r in repos:
+        for lang, count in r.get("language_bytes", {}).items():
+            lang_bytes[lang] = lang_bytes.get(lang, 0) + count
+
+    if lang_bytes:
+        # Prefer byte-count distribution — more accurate than repo count
+        total_bytes = sum(lang_bytes.values())
+        languages: dict[str, float] = {
+            lang: round(count / total_bytes, 4)
+            for lang, count in sorted(lang_bytes.items(), key=lambda x: -x[1])
+            if count > 0
         }
-        for r in repos:
-            for topic in r.get("topics", []):
-                mapped = TOPIC_LANG_MAP.get(topic.lower())
-                if mapped:
-                    lang_counts[mapped] = lang_counts.get(mapped, 0) + 1
+        unique_languages = len(lang_bytes)
+    else:
+        # Fallback: scan topics for language hints if no language data found
+        if not lang_counts:
+            TOPIC_LANG_MAP = {
+                "python": "Python", "javascript": "JavaScript", "typescript": "TypeScript",
+                "java": "Java", "cpp": "C++", "c-plus-plus": "C++", "c": "C",
+                "rust": "Rust", "go": "Go", "golang": "Go", "ruby": "Ruby",
+                "php": "PHP", "swift": "Swift", "kotlin": "Kotlin", "dart": "Dart",
+                "html": "HTML", "css": "CSS", "shell": "Shell", "r": "R",
+            }
+            for r in repos:
+                for topic in r.get("topics", []):
+                    mapped = TOPIC_LANG_MAP.get(topic.lower())
+                    if mapped:
+                        lang_counts[mapped] = lang_counts.get(mapped, 0) + 1
 
-    total_lang_repos = sum(lang_counts.values())
-    languages: dict[str, float] = {
-        lang: round(count / total_lang_repos, 4)
-        for lang, count in sorted(lang_counts.items(), key=lambda x: -x[1])
-    } if total_lang_repos > 0 else {}
-
-    unique_languages = len(lang_counts)
+        total_lang_repos = sum(lang_counts.values())
+        languages: dict[str, float] = {
+            lang: round(count / total_lang_repos, 4)
+            for lang, count in sorted(lang_counts.items(), key=lambda x: -x[1])
+        } if total_lang_repos > 0 else {}
+        unique_languages = len(lang_counts)
 
     # ── F. Diversity features ─────────────────────────────────────────────────
     all_topics: set[str] = set()
