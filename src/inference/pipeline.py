@@ -28,7 +28,7 @@ from src.db import (
     is_configured,
     get_user, upsert_user,
     get_latest_analysis, is_analysis_fresh,
-    save_analysis, save_languages,
+    save_analysis, save_languages, get_languages,
 )
 
 
@@ -43,6 +43,13 @@ def _build_result_from_cache(user_row: dict, analysis_row: dict) -> dict:
             "suggestions": analysis_row.get("llm_suggestions", []),
             "growth_plan": analysis_row.get("llm_growth_plan", ""),
         }
+
+    # Fetch language distribution from the languages table
+    languages = get_languages(user_row["id"])
+    # get_languages returns {lang: percentage_float} — convert back to 0-1 ratio
+    if languages and max(languages.values(), default=0) > 1:
+        total = sum(languages.values())
+        languages = {k: round(v / total, 4) for k, v in languages.items()}
 
     return {
         "username": user_row["username"],
@@ -64,7 +71,7 @@ def _build_result_from_cache(user_row: dict, analysis_row: dict) -> dict:
             "maturity_score":     analysis_row.get("maturity_score",     0),
             "maturity_level":     analysis_row.get("maturity_level",     "Early Stage"),
         },
-        "languages":  {},
+        "languages":  languages,
         "warnings":   ["Served from cache."],
         "insights":   insights,
         "cached":     True,

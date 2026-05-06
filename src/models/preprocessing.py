@@ -24,16 +24,19 @@ IMPACT_FEATURES = [
     "total_stars", "total_forks", "stars_per_repo",
     "growth_rate", "ff_ratio", "repo_count",
     "avg_stars_per_repo", "avg_forks_per_repo",
+    "activity_ratio", "repo_per_year", "unique_languages",
 ]
 
 CONTRIBUTION_FEATURES = [
     "repo_count", "stars_per_repo", "growth_rate",
     "account_age_days", "activity_ratio", "repo_per_year",
+    "total_stars", "avg_stars_per_repo",
 ]
 
 MATURITY_FEATURES = [
     "total_stars", "total_forks", "repo_count",
     "stars_per_repo", "avg_stars_per_repo", "topic_diversity",
+    "unique_languages", "activity_ratio", "avg_forks_per_repo",
 ]
 
 # ── Transforms ────────────────────────────────────────────────────────────────

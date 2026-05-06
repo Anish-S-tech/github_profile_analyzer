@@ -12,7 +12,7 @@ Tables:
 """
 
 from datetime import datetime, timezone, timedelta
-from .client import get_client
+from .client import get_client, get_service_client
 
 CACHE_TTL_HOURS = 24
 
@@ -38,7 +38,7 @@ def _is_fresh(timestamp_str: str) -> bool:
 
 def get_user(username: str) -> dict | None:
     """Fetch user row by username. Returns None if not found."""
-    db = get_client()
+    db = get_service_client()
     if not db:
         return None
     try:
@@ -49,11 +49,8 @@ def get_user(username: str) -> dict | None:
 
 
 def upsert_user(username: str, profile: dict) -> dict | None:
-    """
-    Insert or update user row from Phase 1 profile dict.
-    Returns the saved row or None on failure.
-    """
-    db = get_client()
+    """Insert or update user row. Returns the saved row or None on failure."""
+    db = get_service_client()
     if not db:
         return None
     try:
@@ -81,11 +78,8 @@ def upsert_user(username: str, profile: dict) -> dict | None:
 # ── Analysis ──────────────────────────────────────────────────────────────────
 
 def get_latest_analysis(user_id: str) -> dict | None:
-    """
-    Fetch the most recent analysis row for a user.
-    Returns None if not found.
-    """
-    db = get_client()
+    """Fetch the most recent analysis row for a user."""
+    db = get_service_client()
     if not db:
         return None
     try:
@@ -111,11 +105,8 @@ def is_analysis_fresh(user_id: str) -> bool:
 
 
 def save_analysis(user_id: str, metrics: dict, insights: dict | None) -> dict | None:
-    """
-    Insert a new analysis row. Always inserts (never updates) to keep history.
-    Returns the saved row or None on failure.
-    """
-    db = get_client()
+    """Insert a new analysis row. Always inserts to keep history."""
+    db = get_service_client()
     if not db:
         return None
     try:
@@ -145,11 +136,8 @@ def save_analysis(user_id: str, metrics: dict, insights: dict | None) -> dict | 
 
 
 def get_analysis_history(username: str, limit: int = 10) -> list:
-    """
-    Return the last N analysis rows for a user (for history/growth tracking).
-    Returns empty list on failure.
-    """
-    db = get_client()
+    """Return the last N analysis rows for a user."""
+    db = get_service_client()
     if not db:
         return []
     try:
@@ -172,12 +160,8 @@ def get_analysis_history(username: str, limit: int = 10) -> list:
 # ── Languages ─────────────────────────────────────────────────────────────────
 
 def save_languages(user_id: str, languages: dict) -> bool:
-    """
-    Replace language rows for a user with the latest distribution.
-    Deletes old rows first, then inserts fresh ones.
-    Returns True on success.
-    """
-    db = get_client()
+    """Replace language rows for a user with the latest distribution."""
+    db = get_service_client()
     if not db or not languages:
         return False
     try:
@@ -201,11 +185,8 @@ def save_languages(user_id: str, languages: dict) -> bool:
 
 
 def get_languages(user_id: str) -> dict:
-    """
-    Fetch language distribution for a user.
-    Returns { language: percentage } dict.
-    """
-    db = get_client()
+    """Fetch language distribution for a user."""
+    db = get_service_client()
     if not db:
         return {}
     try:

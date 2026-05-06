@@ -1,45 +1,48 @@
-# Python
+# ── Python ────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-.Python
 *.egg-info/
 dist/
 build/
 .eggs/
 
-# Virtual environment
+# ── Virtual environments ──────────────────────────────────────
 myenv/
 venv/
 env/
 .venv/
 
-# Environment variables (secrets)
+# ── Secrets — NEVER commit ────────────────────────────────────
 .env
+!.env.example
 
-# Trained models (large binary files — regenerate with train_all.py)
+# ── Trained models (regenerate with: python -m src.models.train_all) ──
 models/*.pkl
+!models/.gitkeep
 
-# Data cache and raw dataset (regenerate with build_dataset.py)
-data/cache/
+# ── Data cache & dataset (regenerate with: python -m src.data.build_dataset) ──
+data/cache/*
+!data/cache/.gitkeep
 data/raw/dataset.json
 data/raw/dataset_meta.json
+!data/raw/.gitkeep
 
-# Logs
+# ── Logs ──────────────────────────────────────────────────────
 *.log
 api_log.txt
 
-# Node
+# ── Frontend ──────────────────────────────────────────────────
 frontend/node_modules/
 frontend/dist/
+frontend/.env
+frontend/.env.local
 
-# IDE
+# ── IDE / OS ──────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# OS
 .DS_Store
 Thumbs.db

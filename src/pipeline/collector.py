@@ -1,44 +1,21 @@
 """
-collector.py — GitHub Data Collector
+collector.py - GitHub Data Collector
 
 Fetches raw user and repository data from the GitHub API.
 Returns a clean structured dict, not raw API responses.
-
-Output shape:
-{
-    "user": {
-        "username": str,
-        "followers": int,
-        "following": int,
-        "created_at": str (ISO),
-        "bio": str | None,
-        "location": str | None,
-    },
-    "repos": [
-        {
-            "name": str,
-            "stars": int,
-            "forks": int,
-            "language": str | None,
-            "created_at": str (ISO),
-            "updated_at": str (ISO),
-            "topics": list[str],
-        },
-        ...
-    ]
-}
 """
 
 import os
 import json
 import time
 import requests
+from dotenv import load_dotenv
 
-# ── Config ────────────────────────────────────────────────────────────────────
+load_dotenv()
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
-CACHE_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data", "cache")
-BASE_URL = "https://api.github.com"
+CACHE_DIR    = os.path.join(os.path.dirname(__file__), "..", "..", "data", "cache")
+BASE_URL     = "https://api.github.com"
 
 os.makedirs(CACHE_DIR, exist_ok=True)
 
@@ -46,8 +23,6 @@ _headers = {"Accept": "application/vnd.github+json"}
 if GITHUB_TOKEN:
     _headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
 
-
-# ── Cache helpers ─────────────────────────────────────────────────────────────
 
 def _cache_path(key: str) -> str:
     safe = key.replace("/", "_").replace(" ", "_")
@@ -67,13 +42,7 @@ def _save_cache(key: str, data) -> None:
         json.dump(data, f, indent=2)
 
 
-# ── HTTP helper ───────────────────────────────────────────────────────────────
-
 def _get(url: str, params: dict = None, retries: int = 3):
-    """
-    GET with automatic rate-limit handling and retries.
-    Raises RuntimeError on unrecoverable failure.
-    """
     for attempt in range(retries):
         try:
             resp = requests.get(url, headers=_headers, params=params, timeout=15)
@@ -86,32 +55,24 @@ def _get(url: str, params: dict = None, retries: int = 3):
             return resp.json()
 
         if resp.status_code == 404:
-            return None  # caller decides what 404 means
+            return None
 
         if resp.status_code == 403:
             reset = int(resp.headers.get("X-RateLimit-Reset", time.time() + 60))
-            wait = max(reset - int(time.time()), 1)
+            wait  = max(reset - int(time.time()), 1)
             print(f"[collector] Rate limited. Waiting {wait}s...")
             time.sleep(wait)
             continue
 
         if resp.status_code == 401:
-            raise RuntimeError("GitHub token is invalid or expired.")
+            raise RuntimeError("GitHub token is invalid or expired. Update GITHUB_TOKEN in .env")
 
-        # Other errors — wait and retry
         time.sleep(2 ** attempt)
 
     raise RuntimeError(f"GitHub API failed after {retries} retries for: {url}")
 
 
-# ── Public API ────────────────────────────────────────────────────────────────
-
 def fetch_github_data(username: str, use_cache: bool = True) -> dict:
-    """
-    Main entry point. Returns structured dict with 'user' and 'repos'.
-    Raises ValueError for invalid usernames.
-    Raises RuntimeError for API/network failures.
-    """
     username = username.strip()
     if not username:
         raise ValueError("Username cannot be empty.")
@@ -122,7 +83,6 @@ def fetch_github_data(username: str, use_cache: bool = True) -> dict:
         if cached:
             return cached
 
-    # ── Fetch user ────────────────────────────────────────────────────────────
     raw_user = _get(f"{BASE_URL}/users/{username}")
     if raw_user is None:
         raise ValueError(f"GitHub user '{username}' not found.")
@@ -136,9 +96,8 @@ def fetch_github_data(username: str, use_cache: bool = True) -> dict:
         "location":   raw_user.get("location"),
     }
 
-    # ── Fetch repos ───────────────────────────────────────────────────────────
     repos = []
-    page = 1
+    page  = 1
     while True:
         batch = _get(
             f"{BASE_URL}/users/{username}/repos",
@@ -151,7 +110,7 @@ def fetch_github_data(username: str, use_cache: bool = True) -> dict:
                 "name":       r.get("name", ""),
                 "stars":      r.get("stargazers_count", 0) or 0,
                 "forks":      r.get("forks_count", 0) or 0,
-                "language":   r.get("language"),          # None is valid
+                "language":   r.get("language"),
                 "created_at": r.get("created_at", ""),
                 "updated_at": r.get("updated_at", ""),
                 "topics":     r.get("topics", []) or [],
@@ -159,6 +118,13 @@ def fetch_github_data(username: str, use_cache: bool = True) -> dict:
         if len(batch) < 100:
             break
         page += 1
+
+    # Fetch per-repo language byte counts (top 30 repos by stars for speed)
+    # GitHub's /repos/{owner}/{repo}/languages returns { "Python": 12345, ... }
+    top_repos = sorted(repos, key=lambda r: r["stars"], reverse=True)[:30]
+    for r in top_repos:
+        lang_data = _get(f"{BASE_URL}/repos/{username}/{r['name']}/languages")
+        r["language_bytes"] = lang_data if isinstance(lang_data, dict) else {}
 
     result = {"user": user, "repos": repos}
     _save_cache(cache_key, result)
